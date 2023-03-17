@@ -5,15 +5,15 @@ from tempfile import mkdtemp
 # from tempfile import mkstemp
 from unittest import TestCase
 
-from wiki.core import Wiki
-from wiki.web import create_app
+from mindMapper.core import Wiki
+from mindMapper.web import create_app
 
 #: the default configuration
 CONFIGURATION = u"""
-PRIVATE=False
-TITLE='test'
-DEFAULT_SEARCH_IGNORE_CASE=False
-DEFAULT_AUTHENTICATION_METHOD='hash'
+PRIVATE = false
+TITLE = 'test'
+DEFAULT_SEARCH_IGNORE_CASE = false
+DEFAULT_AUTHENTICATION_METHOD = 'hash'
 """
 
 
@@ -29,7 +29,7 @@ class WikiBaseTestCase(TestCase):
         self._wiki = None
         self._app = None
         self.rootdir = mkdtemp()
-        self.create_file(u'config.py', self.config_content)
+        self.create_file(u'config.toml', self.config_content)
 
     @property
     def wiki(self):

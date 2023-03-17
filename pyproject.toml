@@ -35,4 +35,5 @@ dev = [
     "aiofiles>=23.1.0",
     "pytest-mock>=3.10.0",
     "deepdiff>=6.2.3",
+    "mock>=5.0.1",
 ]

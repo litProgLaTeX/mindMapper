@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}
-	{{ page.title }}
+  {{ page.title }}
 {% endblock title %}
 
 {% block content %}
@@ -14,10 +14,10 @@
     </div>
     <div class="modal-footer">
       <a href="#" class="btn" data-dismiss="modal" aria-hidden="true">No</a>
-      <a href="{{ url_for('wiki.delete', url=page.url) }}" class="btn btn-danger">Yes, delete.</a>
+      <a href="{{ url_for('mindMapper.delete', url=page.url) }}" class="btn btn-danger">Yes, delete.</a>
     </div>
   </div>
-	{{ page }}
+  {{ page }}
 {% endblock content %}
 
 {% block sidebar %}
@@ -25,14 +25,14 @@
 <h3>Tags</h3>
   <ul>
       {% for tag in page.tags.split(',') %}
-        <li><a href="{{ url_for('wiki.tag', name=tag.strip()) }}">{{ tag|trim }}</a></li>
+        <li><a href="{{ url_for('mindMapper.tag', name=tag.strip()) }}">{{ tag|trim }}</a></li>
       {% endfor %}
   </ul>
 {% endif %}
 <h3>Actions</h3>
 <ul class="nav nav-tabs nav-stacked">
-	<li><a href="{{ url_for('wiki.edit', url=page.url) }}">Edit</a></li>
-  <li><a href="{{ url_for('wiki.move', url=page.url) }}">Move</a></li>
+  <li><a href="{{ url_for('mindMapper.edit', url=page.url) }}">Edit</a></li>
+  <li><a href="{{ url_for('mindMapper.move', url=page.url) }}">Move</a></li>
   <li><a href="#confirmDelete" data-toggle="modal" class="text-error">Delete</a></li>
 </ul>
 {% endblock sidebar %}

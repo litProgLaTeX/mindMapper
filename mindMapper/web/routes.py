@@ -15,19 +15,19 @@ from flask_login import login_required
 from flask_login import login_user
 from flask_login import logout_user
 
-from wiki.core import Processor
-from wiki.web.forms import EditorForm
-from wiki.web.forms import LoginForm
-from wiki.web.forms import SearchForm
-from wiki.web.forms import URLForm
-from wiki.web.forms import RegistrationForm
-from wiki.web import current_wiki
-from wiki.web import current_users
-from wiki.web.user import protect
-from wiki.web.user import UserManager
+from mindMapper.core import Processor
+from mindMapper.web.forms import EditorForm
+from mindMapper.web.forms import LoginForm
+from mindMapper.web.forms import SearchForm
+from mindMapper.web.forms import URLForm
+from mindMapper.web.forms import RegistrationForm
+from mindMapper.web import current_wiki
+from mindMapper.web import current_users
+from mindMapper.web.user import protect
+from mindMapper.web.user import UserManager
 
 
-bp = Blueprint('wiki', __name__)
+bp = Blueprint('mindMapper', __name__)
 
 
 @bp.route('/')
@@ -60,7 +60,7 @@ def create():
     form = URLForm()
     if form.validate_on_submit():
         return redirect(url_for(
-            'wiki.edit', url=form.clean_url(form.url.data)))
+            'mindMapper.edit', url=form.clean_url(form.url.data)))
     return render_template('create.html', form=form)
 
 
@@ -76,7 +76,7 @@ def edit(url):
         form.populate_obj(page)
         page.save()
         flash('"%s" was saved.' % page.title, 'success')
-        return redirect(url_for('wiki.display', url=url))
+        return redirect(url_for('mindMapper.display', url=url))
     return render_template('editor.html', form=form, page=page)
 
 
@@ -98,7 +98,7 @@ def move(url):
     if form.validate_on_submit():
         newurl = form.url.data
         renamed = current_wiki.move(url, newurl)
-        return redirect(url_for('wiki.display', url=renamed))
+        return redirect(url_for('mindMapper.display', url=renamed))
     return render_template('move.html', form=form, page=page)
 
 
@@ -109,7 +109,7 @@ def delete(url):
     page = current_wiki.get_or_404(url)
     current_wiki.delete(url)
     flash('Page "%s" was deleted.' % page.title, 'success')
-    return redirect(url_for('wiki.home'))
+    return redirect(url_for('mindMapper.home'))
 
 
 @bp.route('/tags/')
@@ -145,7 +145,7 @@ def user_login():
         login_user(user)
         user.set('authenticated', True)
         flash('Login successful.', 'success')
-        return redirect(request.args.get("next") or url_for('wiki.index'))
+        return redirect(request.args.get("next") or url_for('mindMapper.index'))
     return render_template('login.html', form=form)
 
 
@@ -155,7 +155,7 @@ def user_logout():
     current_user.set('authenticated', False)
     logout_user()
     flash('Logout successful.', 'success')
-    return redirect(url_for('wiki.index'))
+    return redirect(url_for('mindMapper.index'))
 
 
 @bp.route('/user/')
@@ -172,7 +172,7 @@ def user_create():
         UserManager(current_app.config['CONTENT_DIR']).add_user(name=user, password=password)
         # user.set('authenticated', True)
         flash('Registration successful.', 'success')
-        return redirect(request.args.get("next") or url_for('wiki.index'))
+        return redirect(request.args.get("next") or url_for('mindMapper.index'))
     return render_template('register.html', form=form)
 
 

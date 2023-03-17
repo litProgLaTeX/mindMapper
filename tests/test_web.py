@@ -2,11 +2,11 @@ from . import WikiBaseTestCase
 
 
 CONFIGURATION_PRIVATE = u"""
-PRIVATE=True
-TITLE='test'
-DEFAULT_SEARCH_IGNORE_CASE=False
-DEFAULT_AUTHENTICATION_METHOD='hash'
-SECRET_KEY='test'
+PRIVATE = true
+TITLE = 'test'
+DEFAULT_SEARCH_IGNORE_CASE = false
+DEFAULT_AUTHENTICATION_METHOD = 'hash'
+SECRET_KEY = 'test'
 """
 
 
@@ -39,4 +39,4 @@ class AuthenticationTestCase(WikiBaseTestCase):
         """
         rsp = self.app.get('/')
         assert rsp.status_code == 302
-        assert rsp.headers['Location'] == "http://localhost/user/login/?next=%2F"
+        assert rsp.headers['Location'] == "/user/login/?next=%2F"

@@ -1,3 +1,5 @@
+.pdm.toml
+pdm.lock
 content
 .DS_Store
 .cache

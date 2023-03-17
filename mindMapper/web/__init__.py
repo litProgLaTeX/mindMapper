@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+import tomllib
 
 from flask import current_app
 from flask import Flask
@@ -7,8 +8,8 @@ from flask import g
 from flask_login import LoginManager
 from werkzeug.local import LocalProxy
 
-from wiki.core import Wiki
-from wiki.web.user import UserManager
+from mindMapper.core import Wiki
+from mindMapper.web.user import UserManager
 
 
 class WikiError(Exception):
@@ -40,23 +41,25 @@ def create_app(directory):
     app.config['CONTENT_DIR'] = directory
     app.config['TITLE'] = u'wiki'
     try:
-        app.config.from_pyfile(
-            os.path.join(app.config.get('CONTENT_DIR'), 'config.py')
-        )
+        with open(
+            os.path.join(app.config.get('CONTENT_DIR'), 'config.toml'), "rb"
+        ) as tomlFile :
+            tomlData = tomllib.load(tomlFile)
+            app.config.from_mapping(tomlData)
     except IOError:
-        msg = "You need to place a config.py in your content directory."
+        msg = "You need to place a config.toml in your content directory."
         raise WikiError(msg)
 
     loginmanager.init_app(app)
 
-    from wiki.web.routes import bp
+    from mindMapper.web.routes import bp
     app.register_blueprint(bp)
 
     return app
 
 
 loginmanager = LoginManager()
-loginmanager.login_view = 'wiki.user_login'
+loginmanager.login_view = 'mindMapper.user_login'
 
 
 @loginmanager.user_loader

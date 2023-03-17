@@ -6,11 +6,11 @@ from mock import patch
 
 import pytest
 
-from wiki.core import InvalidFileException
-from wiki.core import clean_url
-from wiki.core import wikilink
-from wiki.core import Page
-from wiki.core import Processor
+from mindMapper.core import InvalidFileException
+from mindMapper.core import clean_url
+from mindMapper.core import wikilink
+from mindMapper.core import Page
+from mindMapper.core import Processor
 
 from . import WikiBaseTestCase
 
@@ -277,7 +277,7 @@ class WikiTestCase(WikiBaseTestCase):
         self.create_file('test.md', PAGE_CONTENT)
         self.create_file('one/two/three.md', WIKILINK_PAGE_CONTENT)
         self.create_file('invalid.md', PAGE_CONTENT_INVALID)
-        with patch('wiki.core.Processor', new=SimpleWikilinkProcessor):
+        with patch('mindMapper.core.Processor', new=SimpleWikilinkProcessor):
             pages = self.wiki.index()
         assert len(pages) == 2
 

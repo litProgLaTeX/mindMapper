@@ -6,7 +6,7 @@
 import os
 
 import click
-from wiki.web import create_app
+from mindMapper.web import create_app
 
 
 @click.group()

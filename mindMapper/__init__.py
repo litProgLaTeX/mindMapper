@@ -1,4 +1,4 @@
 # -*- coding: utf-8 -*-
-from wiki.core import Wiki
+from mindMapper.core import Wiki
 
 __all__ = ['Wiki']
