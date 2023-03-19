@@ -36,18 +36,17 @@ def get_users():
 current_users = LocalProxy(get_users)
 
 
-def create_app(directory):
+def create_app(directory, configPath):
     app = Flask(__name__)
     app.config['CONTENT_DIR'] = directory
+    app.config['CONFIG_PATH'] = configPath
     app.config['TITLE'] = u'wiki'
     try:
-        with open(
-            os.path.join(app.config.get('CONTENT_DIR'), 'config.toml'), "rb"
-        ) as tomlFile :
+        with open(configPath, "rb") as tomlFile :
             tomlData = tomllib.load(tomlFile)
             app.config.from_mapping(tomlData)
     except IOError:
-        msg = "You need to place a config.toml in your content directory."
+        msg = "You need to provide a TOML configuration file."
         raise WikiError(msg)
 
     loginmanager.init_app(app)

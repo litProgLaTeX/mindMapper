@@ -58,6 +58,19 @@ class UserManager(object):
         return User(self, name, userdata)
 
     def get_user(self, name):
+        if 1000 <= os.geteuid() : 
+            # the effective user is a normal user...
+            #   so simply ensure that this user is logged in...
+            return User(self, os.getlogin(), {
+                "active": True,
+                "roles": [],
+                "authentication_method": "cleartext",
+                "authenticated": True,
+                "password": "none"
+            })
+
+        # the effective user is a system user...
+        #   so manage multiple users...
         users = self.read()
         userdata = users.get(name)
         if not userdata:
@@ -91,7 +104,9 @@ class User(object):
         self.save()
 
     def save(self):
-        self.manager.update(self.name, self.data)
+        # only save IF the user is not a normal user...
+        if os.geteuid() < 1000 : 
+            self.manager.update(self.name, self.data)
 
     def is_authenticated(self):
         return self.data.get('authenticated')
@@ -108,6 +123,10 @@ class User(object):
     def check_password(self, password):
         """Return True, return False, or raise NotImplementedError if the
         authentication_method is missing or unknown."""
+
+        # IF the user is a normal user... accept any password
+        if 1000 <= os.geteuid() : return True
+
         authentication_method = self.data.get('authentication_method', None)
         if authentication_method is None:
             authentication_method = get_default_authentication_method()
