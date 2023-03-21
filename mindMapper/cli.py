@@ -52,23 +52,23 @@ def web(ctx, debug, host, port):
   app.config['DEBUG'] = debug
 
   if 'SERVER_NAME' in app.config and app.config['SERVER_NAME'] :
-    print(f"using server name {app.config['SERVER_NAME']}")
+    #print(f"using server name {app.config['SERVER_NAME']}")
     sHost, sPort = app.config['SERVER_NAME'].split(':')
     if sHost : app.config['HOST'] = sHost
     if sPort : app.config['PORT'] = sPort
 
   if host :
-    print(f"using command line host {host}")
+    #print(f"using command line host {host}")
     app.config['HOST'] = host
   if port :
-    print(f"using command line port {port}")
+    #print(f"using command line port {port}")
     app.config['PORT'] = port
 
   if 'HOST' not in app.config :
-    print(f"using default host")
+    #print(f"using default host")
     app.config['HOST'] = '127.0.0.1'
   if 'PORT' not in app.config :
-    print(f"using default port")
+    #print(f"using default port")
     app.config['PORT'] = 5000
 
   if debug :
@@ -81,6 +81,7 @@ def web(ctx, debug, host, port):
       print(f"  {aField}")
     print("----------------------------------------------------------")
   app.run(debug=debug, host=app.config['HOST'], port=app.config['PORT'])
+  print("RUNNING APP")
 
 # adapted from https://dev.to/rhymes/flask-list-of-routes-4hph
 @main.command()

@@ -3,15 +3,50 @@
     Wiki core
     ~~~~~~~~~
 """
+import datetime
 from collections import OrderedDict
 from io import open
 import os
 import re
+import tomllib
 
+from flask import current_app
+from flask import g
 from flask import abort
 from flask import url_for
+from werkzeug.local import LocalProxy
 import markdown
 
+import yaml
+
+class Mappings :
+    def __init__(self, nodeMapping, linkMapping) :
+        self.nodes = nodeMapping
+        self.links = linkMapping
+
+    def getMappings(self) :
+        return {
+            'nodes' : self.nodes,
+            'links' : self.links
+        }
+
+def get_mappings() :
+    mappings = getattr(current_app.config, 'MAPPINGS', None)
+    with open("/tmp/mindMapper.txt", 'a') as dateFile :
+        dateFile.write(f"{datetime.datetime.now()}\n")
+        if mappings is None :
+            dateFile.write("reloading\n")
+            tomlData = {}
+            with open(current_app.config['CONFIG_PATH'], "rb") as tomlFile :
+                tomlData = tomllib.load(tomlFile)
+            nodeMapping = {}
+            if 'nodeMapping' in tomlData : nodeMapping = tomlData['nodeMapping']
+            linkMapping = {}
+            if 'linkMapping' in tomlData : linkMapping = tomlData['linkMapping']
+            mappings = current_app.config['MAPPINGS'] = Mappings(nodeMapping, linkMapping)
+    return mappings
+
+current_mappings = LocalProxy(get_mappings)
 
 class InvalidFileException(Exception):
     """
@@ -321,6 +356,9 @@ class Wiki(object):
         """
         # make sure we always have the absolute path for fixing the
         # walk path
+        with open('/tmp/mindMapper.yaml', 'w') as yamlFile :
+            yamlFile.write(yaml.dump(current_mappings.getMappings()))
+    
         pages = []
         root = os.path.abspath(self.root)
         for cur_dir, _, files in os.walk(root):

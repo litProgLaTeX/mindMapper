@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 import os
 import tomllib
 
@@ -10,7 +11,6 @@ from werkzeug.local import LocalProxy
 
 from mindMapper.core import Wiki
 from mindMapper.web.user import UserManager
-
 
 class WikiError(Exception):
     pass
@@ -35,7 +35,6 @@ def get_users():
 
 current_users = LocalProxy(get_users)
 
-
 def create_app(directory, configPath):
     app = Flask(__name__)
     app.config['CONTENT_DIR'] = directory
@@ -44,6 +43,15 @@ def create_app(directory, configPath):
     try:
         with open(configPath, "rb") as tomlFile :
             tomlData = tomllib.load(tomlFile)
+            nodeMapping = {}
+            if 'nodeMapping' in tomlData : nodeMapping = tomlData['nodeMapping']
+            linkMapping = {}
+            if 'linkMapping' in tomlData : linkMapping = tomlData['linkMapping']
+            with app.app_context() :
+                if '_mappings' not in g : g._mappings = {
+                    'nodes' : nodeMapping,
+                    'links' : linkMapping
+                }
             app.config.from_mapping(tomlData)
     except IOError:
         msg = "You need to provide a TOML configuration file."
