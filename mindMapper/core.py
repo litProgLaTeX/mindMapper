@@ -74,13 +74,14 @@ def clean_url(url):
   url = url.replace('\\\\', '/').replace('\\', '/')
   return url
 
-def wikilink(text, url_formatter=None):
+def wikilink(text, page, url_formatter=None):
   """
   Processes Wikilink syntax "[[Link]]" within the html body.
   This is intended to be run after content has been processed
   by markdown and is already HTML.
 
   :param str text: the html to highlight wiki links in.
+  :param Page page: the page being processed.
   :param function url_formatter: which URL formatter to use,
          will by default use the flask url formatter
 
@@ -100,13 +101,22 @@ def wikilink(text, url_formatter=None):
     re.X | re.U
   )
   for i in link_regex.findall(text):
+    baseUrl = i[1]
+    if 0 < baseUrl.find('{') :
+      baseUrl, modifier = baseUrl.split('{')
     title = [i[-1] if i[-1] else i[1]][0]
-    url = clean_url(i[1])
-    html_url = u"<a href='{0}'>{1}</a>".format(
+    modifiler = 'link'
+    if 0 < title.find('{') : 
+      title, modifier = title.split('{')
+      modifier = modifier.removesuffix('}')
+    url = clean_url(baseUrl)
+    html_url = u"<a href='{0}' title='{1}'>{2}</a>".format(
       url_formatter('mindMapper.display', url=url),
+      modifier,
       title
     )
     text = re.sub(link_regex, html_url, text, count=1)
+    page.addLink(baseUrl, title, modifier)
   return text
 
 class Processor(object):
@@ -121,7 +131,7 @@ class Processor(object):
   preprocessors = []
   postprocessors = [wikilink]
 
-  def __init__(self, text):
+  def __init__(self, text, page):
     """
     Initialization of the processor.
 
@@ -135,6 +145,7 @@ class Processor(object):
       'mdx_math'  # mathjax support
     ])
     self.input = text
+    self.page  = page
     self.markdown = None
     self.meta_raw = None
 
@@ -149,7 +160,7 @@ class Processor(object):
     """
     current = self.input
     for processor in self.preprocessors:
-      current = processor(current)
+      current = processor(current, self.page)
     self.pre = current
 
   def process_markdown(self):
@@ -189,7 +200,7 @@ class Processor(object):
     """
     current = self.html
     for processor in self.postprocessors:
-      current = processor(current)
+      current = processor(current, self.page)
     self.final = current
 
   def process(self):
@@ -208,6 +219,7 @@ class Processor(object):
 
 class Page(object):
   def __init__(self, path, url, new=False):
+    self.links = []
     self.content = None
     self._html = None
     self.body = None
@@ -226,7 +238,7 @@ class Page(object):
       self.content = f.read()
 
   def render(self):
-    processor = Processor(self.content)
+    processor = Processor(self.content, self)
     try:
       self._html, self.body, self._meta = processor.process()
     except ValueError:
@@ -283,6 +295,9 @@ class Page(object):
   @tags.setter
   def tags(self, value):
     self['tags'] = value
+
+  def addLink(self, aBaseUrl, aTitle, aModifier) :
+    self.links.append((aBaseUrl, aTitle, aModifier))
 
 class Wiki(object):
   def __init__(self, root, configPath, cachePath):
@@ -445,6 +460,9 @@ class Wiki(object):
           url = clean_url(os.path.join(cur_dir_url, cur_file[:-3]))
           try:
             page = Page(path, url)
+            #print("----------------------------------")
+            #print(yaml.dump(page))
+            #print("----------------------------------")
             pages.append(page)
           except InvalidFileException:
             # for now we just ignore files that are invalid
