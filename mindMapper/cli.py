@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
 """CLI"""
 
+import multiprocessing
 import operator
 import os
+import signal
 import sys
+import time
+import yaml
 
 import click
-from mindMapper.web import create_app
+from mindMapper.web import create_app, current_wiki
 
 @click.group()
 @click.option('--directory', type=click.Path(exists=True), default=None,
@@ -15,73 +19,98 @@ from mindMapper.web import create_app
 @click.option("--config", type=click.Path(exists=True), default='../.mindMapper.toml',
   help="the configuration file for this project [default: '../.mindMapper.toml']"
 )
+@click.option('--host', envvar='WIKI_HOST', default=None,
+  help="Set the host to 0.0.0.0 to connect from outside. The default is 127.0.0.1."
+)
+@click.option("--cache", type=click.Path(), default='../.mindMapper.cache',
+  help="the cache file for this project [default: '../.mindMapper.cache']"
+)
+@click.option('--port', envvar='WIKI_PORT', default=None, type=int,
+  help="Set the listening port. The default is 5000."
+)
 @click.pass_context
-def main(ctx, directory, config):
+def main(ctx, directory, config, cache, host, port):
   """Base setup for all the following commands."""
 
-  configPath = os.path.abspath(config)
   if not directory:
     directory = os.getcwd()
   dirPath = os.path.abspath(click.format_filename(directory))
 
+  configPath = os.path.abspath(os.path.expanduser(config))
   if configPath.startswith(dirPath) :
     print("The config file MUST NOT be located in the wiki directory!")
     print(f"    wiki path: {dirPath}")
     print(f"  config path: {configPath}")
     sys.exit(-1)
   
-  ctx.meta['directory'] = dirPath
-  ctx.meta['config']    = configPath
+  cachePath = os.path.abspath(os.path.expanduser(cache))
+  if cachePath.startswith(dirPath) :
+    print("The cache file MUST NOT be located in the wiki directory!")
+    print(f"    wiki path: {dirPath}")
+    print(f"   cache path: {cachePath}")
+    sys.exit(-1)
+  
+  ctx.meta['directory']  = dirPath
+  ctx.meta['configPath'] = configPath
+  ctx.meta['cachePath']  = cachePath
+  ctx.meta['host']       = host
+  ctx.meta['port']       = port
+
+
+def pagesCacheWorker(wiki, stopEvent) :
+  signal.signal(signal.SIGINT, signal.SIG_IGN) # ignore KeyborardInterupt signal
+  while not stopEvent.is_set() :
+    try : 
+      wiki.rebuildPagesCache()
+      time.sleep(1)
+    except KeyboardInterrupt : 
+      pass
 
 @main.command()
 @click.option('--debug/--no-debug', envvar='WIKI_DEBUG', default=False,
   help="whether or not to run the web app in debug mode."
 )
-@click.option('--host', envvar='WIKI_HOST', default=None,
-  help="Set the host to 0.0.0.0 to connect from outside. The default is 127.0.0.1."
-)
-@click.option('--port', envvar='WIKI_PORT', default=None, type=int,
-  help="Set the listening port. The default is 5000."
-)
 @click.pass_context
-def web(ctx, debug, host, port):
+def web(ctx, debug):
   """Run the web app."""
 
-  app = create_app(ctx.meta['directory'], ctx.meta['config'])
+  app = create_app(ctx.meta)
+  with app.app_context() :
+    app.config['DEBUG'] = debug
 
-  app.config['DEBUG'] = debug
+    # report our configuration if in debug mode
+    if debug :
+      configStr = repr(app.config).removeprefix('<Config {').removesuffix('}>')
+      configFields = list(map(str.strip, configStr.split(',')))
+      configFields.sort()
+      print("----------------------------------------------------------")
+      print("app.config:")
+      for aField in configFields :
+        print(f"  {aField}")
+      print("----------------------------------------------------------")
 
-  if 'SERVER_NAME' in app.config and app.config['SERVER_NAME'] :
-    #print(f"using server name {app.config['SERVER_NAME']}")
-    sHost, sPort = app.config['SERVER_NAME'].split(':')
-    if sHost : app.config['HOST'] = sHost
-    if sPort : app.config['PORT'] = sPort
+    # ensure the pages cache has been removed and rebuilt for the first time
+    current_wiki.removePagesCache()
+    current_wiki.markRebuildPagesCache()
+    current_wiki.rebuildPagesCache()
 
-  if host :
-    #print(f"using command line host {host}")
-    app.config['HOST'] = host
-  if port :
-    #print(f"using command line port {port}")
-    app.config['PORT'] = port
+    # now start the pages cache worker to rebuild all subsequent requests
+    stopPagesCacheWorker = multiprocessing.Event()
+    stopPagesCacheWorker.clear()
+    cacheWorker = multiprocessing.Process(target=pagesCacheWorker, args=(
+      current_wiki, stopPagesCacheWorker
+    ))
+    cacheWorker.start()
 
-  if 'HOST' not in app.config :
-    #print(f"using default host")
-    app.config['HOST'] = '127.0.0.1'
-  if 'PORT' not in app.config :
-    #print(f"using default port")
-    app.config['PORT'] = 5000
+    # start the web server
+    app.run(debug=debug, host=app.config['HOST'], port=app.config['PORT'])
 
-  if debug :
-    configStr = repr(app.config).removeprefix('<Config {').removesuffix('}>')
-    configFields = list(map(str.strip, configStr.split(',')))
-    configFields.sort()
-    print("----------------------------------------------------------")
-    print("app.config:")
-    for aField in configFields :
-      print(f"  {aField}")
-    print("----------------------------------------------------------")
-  app.run(debug=debug, host=app.config['HOST'], port=app.config['PORT'])
-  print("RUNNING APP")
+    # shut down the pages cache worker
+    stopPagesCacheWorker.set()
+    cacheWorker.join()
+    current_wiki.removePagesCache()
+
+    print("")
 
 # adapted from https://dev.to/rhymes/flask-list-of-routes-4hph
 @main.command()
@@ -89,7 +118,7 @@ def web(ctx, debug, host, port):
 def routes(ctx):
   'Display registered routes'
 
-  app = create_app(ctx.meta['directory'], ctx.meta['config'])
+  app = create_app(ctx.meta)
   rules = []
   for rule in app.url_map.iter_rules():
     methods = ','.join(sorted(rule.methods))
@@ -99,3 +128,15 @@ def routes(ctx):
   for endpoint, methods, rule in sorted(rules, key=sort_by_rule):
     route = '{:25s} {:25s} {}'.format(endpoint, methods, rule)
     print(route)
+
+@main.command()
+@click.pass_context
+def buildCache(ctx) :
+  'Rebuild the pages cache'
+  app = create_app(ctx.meta)
+  with app.app_context() :
+    wiki = current_wiki
+    wiki.markRebuildPagesCache()
+    wiki.rebuildPagesCache()
+    #pages = wiki.loadPagesCache()
+    #print(yaml.dump(pages))

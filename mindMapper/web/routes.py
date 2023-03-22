@@ -75,6 +75,7 @@ def edit(url):
             page = current_wiki.get_bare(url)
         form.populate_obj(page)
         page.save()
+        current_wiki.markRebuildPagesCache()
         flash('"%s" was saved.' % page.title, 'success')
         return redirect(url_for('mindMapper.display', url=url))
     return render_template('editor.html', form=form, page=page)
