@@ -6,13 +6,51 @@ from mock import patch
 
 import pytest
 
-from mindMapper.core import InvalidFileException
-from mindMapper.core import clean_url
-from mindMapper.core import wikilink
-from mindMapper.core import Page
-from mindMapper.core import Processor
+from mindMapper.utils import InvalidFileException
+from mindMapper.utils import clean_url
+import mindMapper.processor
 
-from . import WikiBaseTestCase
+def simple_url_formatter(endpoint, url):
+    """
+        A simple URL formatter to use when no application context
+        is available.
+
+        :param str endpoint: the endpoint to use.
+        :param str url: the URL to format
+    """
+    print("simple_url_formatter")
+    return u"/{}".format(url)
+
+def wikilink_simple_url_formatter(text, page):
+    """
+        A wikilink function that uses the simple URL formatter.
+
+        :param str text: the text to format.
+    """
+    print("wikilink_simple_url_formatter")
+    return mindMapper.processor.wikilink(text, page, url_formatter=simple_url_formatter)
+
+# Directly Monkey Path the Processor BEFORE loading the wiki
+#
+oldProcessorInit = mindMapper.processor.Processor.__init__
+def simpleWikilinkProcessorInit(self, text, aPage) :
+    """
+        As the processor can currently not take arguments for
+        preprocessors we need to temporarily subclass it to
+        overwrite it with the simple URL formatter.
+    """
+    oldProcessorInit(self, text, aPage)
+    self.postprocessors = [wikilink_simple_url_formatter]
+
+mindMapper.processor.Processor.__init__ = simpleWikilinkProcessorInit
+
+from mindMapper.page import Page
+
+from utils import WikiBaseTestCase
+
+class MockPage :
+    def addLink(self, aBaseUrl, aTitle, aModifier) :
+        pass
 
 PAGE_CONTENT = u"""\
 title: Test
@@ -38,37 +76,7 @@ title: link
 """
 
 WIKILINK_CONTENT_HTML = u"""\
-<p><a href='/target'>target</a></p>"""
-
-
-def simple_url_formatter(endpoint, url):
-    """
-        A simple URL formatter to use when no application context
-        is available.
-
-        :param str endpoint: the endpoint to use.
-        :param str url: the URL to format
-    """
-    return u"/{}".format(url)
-
-
-def wikilink_simple_url_formatter(text):
-    """
-        A wikilink function that uses the simple URL formatter.
-
-        :param str text: the text to format.
-    """
-    return wikilink(text, simple_url_formatter)
-
-
-class SimpleWikilinkProcessor(Processor):
-    """
-        As the processor can currently not take arguments for
-        preprocessors we need to temporarily subclass it to
-        overwrite it with the simple URL formatter.
-    """
-    postprocessors = [wikilink_simple_url_formatter]
-
+<p><a href='/target' title='link'>target</a></p>"""
 
 class URLCleanerTestCase(TestCase):
     """
@@ -115,28 +123,32 @@ class WikilinkTestCase(TestCase):
         """
             Assert a simple wikilink is converted correctly.
         """
-        formatted = wikilink(u'[[target]]', simple_url_formatter)
-        assert formatted == "<a href='/target'>target</a>"
+        page = MockPage()
+        formatted = mindMapper.processor.wikilink(u'[[target]]', page, simple_url_formatter)
+        assert formatted == "<a href='/target' title='link'>target</a>"
 
     def test_titled_wikilink(self):
         """
             Assert a wikilink with a title will be converted correctly.
         """
-        formatted = wikilink(u'[[target|Target]]', simple_url_formatter)
-        assert formatted == "<a href='/target'>Target</a>"
+        page = MockPage()
+        formatted = mindMapper.processor.wikilink(u'[[target|Target]]', page, simple_url_formatter)
+        assert formatted == "<a href='/target' title='link'>Target</a>"
 
     def test_multiple_wikilinks(self):
         """
             Assert a text with multiple wikilinks will be converted
             correctly.
         """
-        formatted = wikilink(
+        page = MockPage()
+        formatted = mindMapper.processor.wikilink(
             u'[[target|Target]] is better than [[alternative]]',
+            page,
             simple_url_formatter
         )
         assert formatted == (
-            "<a href='/target'>Target</a> is better than"
-            " <a href='/alternative'>alternative</a>"
+            "<a href='/target' title='link'>Target</a> is better than"
+            " <a href='/alternative' title='link'>alternative</a>"
         )
 
 
@@ -150,7 +162,8 @@ class ProcessorTestCase(WikiBaseTestCase):
 
     def setUp(self):
         super(ProcessorTestCase, self).setUp()
-        self.processor = Processor(self.page_content)
+        page = MockPage()
+        self.processor = mindMapper.processor.Processor(self.page_content, page)
 
     def test_process(self):
         """
@@ -169,7 +182,9 @@ class ProcessorTestCase(WikiBaseTestCase):
         """
             Assert that wikilinks are processed correctly.
         """
-        self.processor = SimpleWikilinkProcessor(WIKILINK_PAGE_CONTENT)
+        page = MockPage()
+        #self.processor = SimpleWikilinkProcessor(WIKILINK_PAGE_CONTENT, page)
+        self.processor = mindMapper.processor.Processor(WIKILINK_PAGE_CONTENT, page)
         html, _, _ = self.processor.process()
         assert html == WIKILINK_CONTENT_HTML
 
@@ -277,8 +292,8 @@ class WikiTestCase(WikiBaseTestCase):
         self.create_file('test.md', PAGE_CONTENT)
         self.create_file('one/two/three.md', WIKILINK_PAGE_CONTENT)
         self.create_file('invalid.md', PAGE_CONTENT_INVALID)
-        with patch('mindMapper.core.Processor', new=SimpleWikilinkProcessor):
-            pages = self.wiki.index()
+        self.wiki.rebuildPagesCache()
+        pages = self.wiki.index()
         assert len(pages) == 2
 
         # as the index return should be sorted by the title
@@ -289,6 +304,7 @@ class WikiTestCase(WikiBaseTestCase):
 
         testpage = pages[1]
         assert testpage.url == 'test'
+        #assert False
 
     def test_move(self):
         """

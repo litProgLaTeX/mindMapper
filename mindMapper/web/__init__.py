@@ -9,7 +9,7 @@ from flask import g
 from flask_login import LoginManager
 from werkzeug.local import LocalProxy
 
-from mindMapper.core import Wiki
+from mindMapper.wiki import Wiki
 from mindMapper.web.user import UserManager
 
 class WikiError(Exception):

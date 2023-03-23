@@ -15,7 +15,7 @@ from wtforms.validators import InputRequired
 from wtforms.validators import ValidationError
 from wtforms.validators import EqualTo
 
-from mindMapper.core import clean_url
+from mindMapper.utils import clean_url
 from mindMapper.web import current_wiki
 from mindMapper.web import current_users
 

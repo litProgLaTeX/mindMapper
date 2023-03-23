@@ -15,7 +15,7 @@ from flask_login import login_required
 from flask_login import login_user
 from flask_login import logout_user
 
-from mindMapper.core import Processor
+from mindMapper.processor import Processor
 from mindMapper.web.forms import EditorForm
 from mindMapper.web.forms import LoginForm
 from mindMapper.web.forms import SearchForm

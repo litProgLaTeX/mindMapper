@@ -1,4 +1,4 @@
-from . import WikiBaseTestCase
+from utils import WikiBaseTestCase
 
 
 CONFIGURATION_PRIVATE = u"""
