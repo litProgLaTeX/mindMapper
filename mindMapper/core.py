@@ -5,6 +5,7 @@
 """
 import datetime
 from collections import OrderedDict
+import json
 from io import open
 import os
 import pickle
@@ -297,7 +298,12 @@ class Page(object):
     self['tags'] = value
 
   def addLink(self, aBaseUrl, aTitle, aModifier) :
-    self.links.append((aBaseUrl, aTitle, aModifier))
+    self.links.append({
+      'source'   : self.url,
+      'target'   : aBaseUrl,
+      'title'    : aTitle,
+      'modifier' : aModifier
+    })
 
 class Wiki(object):
   def __init__(self, root, configPath, cachePath):
@@ -305,6 +311,15 @@ class Wiki(object):
     self.configPath    = os.path.abspath(configPath)
     self.rebuildMarker = os.path.abspath(os.path.join(self.root, '.rebuild'))
     self.pagesCache    = os.path.abspath(cachePath)
+
+    with open(configPath, "rb") as tomlFile :
+      tomlData = tomllib.load(tomlFile)
+      self.nodeMapping = {}
+      if 'nodeMapping' in tomlData : self.nodeMapping = tomlData['nodeMapping']
+      self.nodeMapping['default'] = {'color' : 'black' }
+      self.linkMapping = {}
+      if 'linkMapping' in tomlData : self.linkMapping = tomlData['linkMapping']
+      self.linkMapping['default'] = {'color' : 'black' }
 
   def path(self, url):
     return os.path.join(self.root, url + '.md')
@@ -347,12 +362,11 @@ class Wiki(object):
       raise RuntimeError(
         'Possible write attempt outside content directory: '
         '%s' % newurl)
-    # create folder if it does not exists yet
+    # create folder if it does not exist yet
     folder = os.path.dirname(target)
     if not os.path.exists(folder):
       os.makedirs(folder)
     os.rename(source, target)
-    #self.markRebuildPagesCache()
     return newurl
 
   def delete(self, url):
@@ -360,7 +374,6 @@ class Wiki(object):
     if not self.exists(url):
       return False
     os.remove(path)
-    #self.markRebuildPagesCache()
     return True
 
   def index(self):
@@ -444,7 +457,11 @@ class Wiki(object):
 
   def rebuildPagesCache(self) :
     print(" * Rebuilding pages cache")
+
+    # start by loading all of the pages
+    #
     pages = []
+    pagesMap = {}
     root = os.path.abspath(self.root)
     for cur_dir, _, files in os.walk(root):
       # get the url of the current directory
@@ -455,21 +472,95 @@ class Wiki(object):
           url = clean_url(os.path.join(cur_dir_url, cur_file[:-3]))
           try:
             page = Page(path, url)
-            #print("----------------------------------")
-            #print(yaml.dump(page))
-            #print("----------------------------------")
             pages.append(page)
+            pagesMap[page.url] = page
           except InvalidFileException:
             # for now we just ignore files that are invalid
             # entirely
             pass
+    #
+    # now build the link maps
+    #
+    maps = {}
+    for aPage in pages :
+      for aLink in aPage.links :
+        sourcePage = pagesMap[aLink['source']]
+        targetPage = pagesMap[aLink['target']]
+        modifier   = aLink['modifier']
+      
+        pageTags = {}
+        for aTag in sourcePage.tags.split(',') : pageTags[aTag.strip()] = True
+        for aTag in targetPage.tags.split(',') : pageTags[aTag.strip()] = True
+        pageTags['theVortex'] = True
+        for aTag in pageTags :
+          if aTag not in maps : maps[aTag] = {
+            'nodes' : {},
+            'links' : {}
+          }
+          tagMap = maps[aTag]
+          tagMap['nodes'][sourcePage.url] = True
+          tagMap['nodes'][targetPage.url] = True
+          if sourcePage.url not in tagMap['links'] :
+            tagMap['links'][sourcePage.url] = {}
+          srcMap = tagMap['links'][sourcePage.url]
+          if targetPage.url not in srcMap :
+            srcMap[targetPage.url] = {}
+          srcMap[targetPage.url][modifier] = True
+    #
+    # now write out each link map
+    #
+    for aTag, aMap in maps.items() :
+      theMap = { 'nodes' : [], 'links' : []}
+      links  = theMap['links']
+      nodes  = theMap['nodes']
+      for aNode in aMap['nodes'] :
+        aNode = {
+          'id'       : pagesMap[aNode].url,
+          'path'     : pagesMap[aNode].url,
+          'nodeType' : 'default'
+        }
+        for aKey, aValue in self.nodeMapping['default'].items() :
+          aNode[aKey] = aValue
+        nodes.append(aNode)
+      for aSource in aMap['links'] :
+        for aTarget in aMap['links'][aSource] :
+          for aModifier in aMap['links'][aSource][aTarget] :
+            aLink = {
+              'source'   : pagesMap[aSource].url,
+              'target'   : pagesMap[aTarget].url,
+              'linkType' : aModifier
+            }
+            linkModifier = aModifier
+            if linkModifier not in self.linkMapping : 
+              linkModifier = 'default'
+            for aKey, aValue in self.linkMapping[linkModifier].items() :
+              aLink[aKey] = aValue
+            links.append(aLink)
+      tagFileName = None
+      try :
+        with NamedTemporaryFile(
+          dir=os.path.abspath(self.root), delete=False  
+        ) as tagFile :
+          tagFileName = tagFile.name
+          #jsonStr = json.dumps(theMap, indent=2)
+          jsonStr = json.dumps(theMap)
+          tagFile.write(jsonStr.encode())
+          tagFile.write(b"\n")
+        os.replace(tagFileName, os.path.abspath(os.path.join(self.root, f"{aTag}.json")))
+      finally :
+        try : os.remove(tagFileName)
+        except (TypeError, OSError) :
+          pass
+    #
+    # now save the pages cache
+    #
     tmpName = None
     try :
       with NamedTemporaryFile(
         dir=os.path.abspath(self.root), delete=False
       ) as tmpFile :
         tmpName = tmpFile.name
-        jsonStr = pickle.dump(pages, tmpFile)
+        pickle.dump(pages, tmpFile)
       os.replace(tmpName, self.pagesCache)
       print(f" * Saved pagesCache to {self.pagesCache}")
     finally :
