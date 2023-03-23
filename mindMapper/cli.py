@@ -9,6 +9,9 @@ import time
 import yaml
 
 import click
+
+from waitress import serve
+
 from mindMapper.web import create_app, current_wiki
 
 @click.group()
@@ -83,7 +86,13 @@ def web(ctx, debug):
     current_wiki.rebuildPagesCache()
 
     # start the web server
-    app.run(debug=debug, host=app.config['HOST'], port=app.config['PORT'])
+    if debug :
+      app.run(debug=debug, host=app.config['HOST'], port=app.config['PORT'])
+    else :
+      print("\nWaitress will serve you on:")
+      print(f"  http://{app.config['HOST']}:{app.config['PORT']}")
+      print("")
+      serve(app.wsgi_app, host=app.config['HOST'], port=app.config['PORT'])
 
     current_wiki.removePagesCache()
 
