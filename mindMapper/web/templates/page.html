@@ -27,11 +27,11 @@
     }
     </style>
     <svg width = "800" height="600" ></svg>
-    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
     <script>
     var graph = {% autoescape false %}{{ page.mapData }}{% endautoescape %};
     </script>
-    <script src="static/js/conceptmapper.js"></script>
+    <script src="/static/conceptmapper.js"></script>
   </div>
   <hr>
   {% endif %}
