@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """CLI"""
 
-import multiprocessing
 import operator
 import os
 import signal
@@ -56,16 +55,6 @@ def main(ctx, directory, config, cache, host, port):
   ctx.meta['host']       = host
   ctx.meta['port']       = port
 
-
-def pagesCacheWorker(wiki, stopEvent) :
-  signal.signal(signal.SIGINT, signal.SIG_IGN) # ignore KeyborardInterupt signal
-  while not stopEvent.is_set() :
-    try : 
-      wiki.rebuildPagesCache()
-      time.sleep(1)
-    except KeyboardInterrupt : 
-      pass
-
 @main.command()
 @click.option('--debug/--no-debug', envvar='WIKI_DEBUG', default=False,
   help="whether or not to run the web app in debug mode."
@@ -91,23 +80,11 @@ def web(ctx, debug):
 
     # ensure the pages cache has been removed and rebuilt for the first time
     current_wiki.removePagesCache()
-    current_wiki.markRebuildPagesCache()
     current_wiki.rebuildPagesCache()
-
-    # now start the pages cache worker to rebuild all subsequent requests
-    stopPagesCacheWorker = multiprocessing.Event()
-    stopPagesCacheWorker.clear()
-    cacheWorker = multiprocessing.Process(target=pagesCacheWorker, args=(
-      current_wiki, stopPagesCacheWorker
-    ))
-    cacheWorker.start()
 
     # start the web server
     app.run(debug=debug, host=app.config['HOST'], port=app.config['PORT'])
 
-    # shut down the pages cache worker
-    stopPagesCacheWorker.set()
-    cacheWorker.join()
     current_wiki.removePagesCache()
 
     print("")
@@ -136,7 +113,6 @@ def buildCache(ctx) :
   app = create_app(ctx.meta)
   with app.app_context() :
     wiki = current_wiki
-    wiki.markRebuildPagesCache()
     wiki.rebuildPagesCache()
     #pages = wiki.loadPagesCache()
     #print(yaml.dump(pages))

@@ -75,9 +75,9 @@ def edit(url):
             page = current_wiki.get_bare(url)
         form.populate_obj(page)
         page.save()
-        current_wiki.markRebuildPagesCache()
+        #current_wiki.markRebuildPagesCache()
         flash('"%s" was saved.' % page.title, 'success')
-        return redirect(url_for('mindMapper.display', url=url))
+        return redirect(url_for('mindMapper.rebuild', url=url))
     return render_template('editor.html', form=form, page=page)
 
 
@@ -99,7 +99,7 @@ def move(url):
     if form.validate_on_submit():
         newurl = form.url.data
         renamed = current_wiki.move(url, newurl)
-        return redirect(url_for('mindMapper.display', url=renamed))
+        return redirect(url_for('mindMapper.rebuild', url=renamed))
     return render_template('move.html', form=form, page=page)
 
 
@@ -110,8 +110,15 @@ def delete(url):
     page = current_wiki.get_or_404(url)
     current_wiki.delete(url)
     flash('Page "%s" was deleted.' % page.title, 'success')
-    return redirect(url_for('mindMapper.home'))
+    return redirect(url_for('mindMapper.rebuild', url='home'))
 
+@bp.route('/rebuild/<path:url>/')
+@login_required
+@protect
+def rebuild(url) :
+    current_wiki.rebuildPagesCache()
+    #flash('The pages cache has been rebuilt')
+    return redirect(url_for('mindMapper.display', url=url))
 
 @bp.route('/tags/')
 @protect

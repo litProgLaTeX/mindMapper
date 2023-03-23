@@ -347,12 +347,12 @@ class Wiki(object):
       raise RuntimeError(
         'Possible write attempt outside content directory: '
         '%s' % newurl)
-      # create folder if it does not exists yet
-      folder = os.path.dirname(target)
-      if not os.path.exists(folder):
-        os.makedirs(folder)
-      os.rename(source, target)
-      self.markRebuildPagesCache()
+    # create folder if it does not exists yet
+    folder = os.path.dirname(target)
+    if not os.path.exists(folder):
+      os.makedirs(folder)
+    os.rename(source, target)
+    #self.markRebuildPagesCache()
     return newurl
 
   def delete(self, url):
@@ -360,7 +360,7 @@ class Wiki(object):
     if not self.exists(url):
       return False
     os.remove(path)
-    self.markRebuildPagesCache()
+    #self.markRebuildPagesCache()
     return True
 
   def index(self):
@@ -431,9 +431,6 @@ class Wiki(object):
           break
     return matched
 
-  def markRebuildPagesCache(self) :
-    open(self.rebuildMarker, 'w').close()
-
   def removePagesCache(self) :
     if os.path.exists(self.pagesCache) : os.remove(self.pagesCache)
 
@@ -446,8 +443,6 @@ class Wiki(object):
     return pages
 
   def rebuildPagesCache(self) :
-    if not os.path.exists(self.rebuildMarker) : return
-    os.remove(self.rebuildMarker)
     print(" * Rebuilding pages cache")
     pages = []
     root = os.path.abspath(self.root)
