@@ -15,6 +15,7 @@ class Page(object):
   def __init__(self, path, url, new=False):
     self.links = []
     self.content = None
+    self.mapData = None
     self._html = None
     self.body = None
     self.path = path
@@ -30,6 +31,10 @@ class Page(object):
   def load(self):
     with open(self.path, 'r', encoding='utf-8') as f:
       self.content = f.read()
+    mapDataPath = self.path.removesuffix('.md')+'.json'
+    if os.path.exists(mapDataPath) :
+      with open(mapDataPath) as mapDataFile :
+        self.mapData = mapDataFile.read()
 
   def render(self):
     processor = Processor(self.content, self)

@@ -239,6 +239,7 @@ class Wiki(object):
     #
     # now write out each link map
     #
+    os.makedirs(os.path.abspath(os.path.join(self.root, 'maps')), exist_ok=True)
     for aTag, aMap in maps.items() :
       theMap = { 'nodes' : [], 'links' : []}
       links  = theMap['links']
@@ -276,7 +277,7 @@ class Wiki(object):
           jsonStr = json.dumps(theMap)
           tagFile.write(jsonStr.encode())
           tagFile.write(b"\n")
-        os.replace(tagFileName, os.path.abspath(os.path.join(self.root, f"{aTag}.json")))
+        os.replace(tagFileName, os.path.abspath(os.path.join(self.root, 'maps', f"{aTag}.json")))
       finally :
         try : os.remove(tagFileName)
         except (TypeError, OSError) :

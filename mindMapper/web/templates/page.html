@@ -17,6 +17,24 @@
       <a href="{{ url_for('mindMapper.delete', url=page.url) }}" class="btn btn-danger">Yes, delete.</a>
     </div>
   </div>
+  {% if page.mapData %}
+  <div>
+    <style>
+    .nodes circle {
+      pointer-events: all;
+      stroke: none;
+      stroke-width: 40px;
+    }
+    </style>
+    <svg width = "800" height="600" ></svg>
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script>
+    var graph = {% autoescape false %}{{ page.mapData }}{% endautoescape %};
+    </script>
+    <script src="static/js/conceptmapper.js"></script>
+  </div>
+  <hr>
+  {% endif %}
   {{ page }}
 {% endblock content %}
 

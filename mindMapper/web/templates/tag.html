@@ -4,6 +4,9 @@
 
 {% block content %}
 {% if pages %}
+  <p>concept map: 
+    <a href="{{ url_for('mindMapper.display', url=tagUrl)}}">{{ tag }}</a>
+  </p>
   <table class="table">
     <thead>
       <tr>

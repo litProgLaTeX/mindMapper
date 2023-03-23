@@ -131,7 +131,9 @@ def tags():
 @protect
 def tag(name):
     tagged = current_wiki.index_by_tag(name)
-    return render_template('tag.html', pages=tagged, tag=name)
+    return render_template(
+        'tag.html', pages=tagged, tag=name, tagUrl=f"maps/{name}"
+    )
 
 
 @bp.route('/search/', methods=['GET', 'POST'])
