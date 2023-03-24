@@ -67,7 +67,7 @@ function nodeClicked(d, i) {
 function nodeDblClicked(d) {
   if (d3.event.defaultPrevented) return; // dragged
 
-  window.open(d.path);  
+  window.open(d.id);  
 }
 
 var svg = d3.select("svg"),
@@ -124,10 +124,10 @@ var node = outerSvg.append("g")
       .on("dblclick", nodeDblClicked);
 
 node.append("title")
-    .text(function(d) { return d.id; });
+    .text(function(d) { return d.title; });
 
 node.append("a")
-    .attr("href", function(d) { return d.path ; })
+    .attr("href", function(d) { return d.id ; })
     .text(function(d) { return d.id ; });
 
 simulation

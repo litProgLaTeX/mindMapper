@@ -246,8 +246,8 @@ class Wiki(object):
       nodes  = theMap['nodes']
       for aNode in aMap['nodes'] :
         aNode = {
-          'id'       : pagesMap[aNode].url,
-          'path'     : pagesMap[aNode].url,
+          'id'       : '/'+pagesMap[aNode].url,
+          'title'    : pagesMap[aNode].title,
           'nodeType' : 'default'
         }
         for aKey, aValue in self.nodeMapping['default'].items() :
@@ -257,8 +257,8 @@ class Wiki(object):
         for aTarget in aMap['links'][aSource] :
           for aModifier in aMap['links'][aSource][aTarget] :
             aLink = {
-              'source'   : pagesMap[aSource].url,
-              'target'   : pagesMap[aTarget].url,
+              'source'   : '/'+pagesMap[aSource].url,
+              'target'   : '/'+pagesMap[aTarget].url,
               'linkType' : aModifier
             }
             linkModifier = aModifier

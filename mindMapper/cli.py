@@ -89,7 +89,7 @@ def web(ctx, debug):
     if debug :
       app.run(debug=debug, host=app.config['HOST'], port=app.config['PORT'])
     else :
-      print("\nWaitress will serve you on:")
+      print("\nYour Waitress will serve you on:")
       print(f"  http://{app.config['HOST']}:{app.config['PORT']}")
       print("")
       serve(app.wsgi_app, host=app.config['HOST'], port=app.config['PORT'])
