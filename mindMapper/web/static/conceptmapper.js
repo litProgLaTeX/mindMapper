@@ -1,4 +1,4 @@
-// MindMap java script 
+// MindMap java script
 //
 // REQUIRES graph GLOBAL variable.
 //
@@ -25,19 +25,19 @@ function ticked() {
 // see: https://observablehq.com/@d3/click-vs-drag
 function drag() {
 
-  function dragstarted(d) {
-    if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+  function dragstarted(event, d) {
+    if (!event.active) simulation.alphaTarget(0.3).restart();
     d.fx = d.x;
     d.fy = d.y;
   }
 
-  function dragged(d) {
-    d.fx = d3.event.x;
-    d.fy = d3.event.y;
+  function dragged(event, d) {
+    d.fx = event.x;
+    d.fy = event.y;
   }
 
-  function dragended(d) {
-    if (!d3.event.active) simulation.alphaTarget(0);
+  function dragended(event, d) {
+    if (!event.active) simulation.alphaTarget(0);
     d.fx = null;
     d.fy = null;
   }
@@ -48,8 +48,8 @@ function drag() {
       .on("end", dragended);
 }
 
-function nodeClicked(d, i) {
-  if (d3.event.defaultPrevented) return; // dragged
+function nodeClicked(event, d, i) {
+  if (event.defaultPrevented) return; // dragged
 
   var thisNode = d3.select(this);
 
@@ -64,10 +64,10 @@ function nodeClicked(d, i) {
   }
 }
 
-function nodeDblClicked(d) {
-  if (d3.event.defaultPrevented) return; // dragged
+function nodeDblClicked(event, d) {
+  if (event.defaultPrevented) return; // dragged
 
-  window.open(d.id);  
+  window.open(d.id);
 }
 
 var svg = d3.select("svg"),
@@ -75,8 +75,8 @@ var svg = d3.select("svg"),
     height = +svg.attr("height"),
     outerSvg = svg.append("g");
 
-function zoomActions() {
-  outerSvg.attr("transform", d3.event.transform);
+function zoomActions(event) {
+  outerSvg.attr("transform", event.transform);
 }
 
   svg.call(d3.zoom()

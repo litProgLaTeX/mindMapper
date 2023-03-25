@@ -1,3 +1,5 @@
+notes/maps/*.json
+.mindMapper.cache
 .mindMapper.toml
 
 .pdm.toml

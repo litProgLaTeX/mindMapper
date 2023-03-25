@@ -98,7 +98,7 @@ class Page(object):
   def addLink(self, aBaseUrl, aTitle, aModifier) :
     self.links.append({
       'source'   : self.url,
-      'target'   : aBaseUrl,
+      'target'   : aBaseUrl.lower(),
       'title'    : aTitle,
       'modifier' : aModifier
     })
