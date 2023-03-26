@@ -81,11 +81,12 @@ def edit(url):
     return render_template('editor.html', form=form, page=page)
 
 
-@bp.route('/preview/', methods=['POST'])
+@bp.route('/preview/<path:url>/', methods=['POST'])
 @protect
-def preview():
+def preview(url):
+    page = current_wiki.get(url)
     data = {}
-    processor = Processor(request.form['body'])
+    processor = Processor(request.form['body'], page)
     data['html'], data['body'], data['meta'] = processor.process()
     return data['html']
 
