@@ -194,6 +194,19 @@ class Wiki(object):
     #
     maps = {}
     for aPage in pages :
+      # insert all nodes
+      pageTags = {}
+      for aTag in aPage.tags.split(',') : pageTags[aTag.strip()] = True
+      pageTags['theVortex'] = True
+      for aTag in pageTags :
+        if aTag not in maps : maps[aTag] = {
+          'nodes' : {},
+          'links' : {}
+        }
+        tagMap = maps[aTag]
+        tagMap['nodes'][aPage.url] = True
+
+      # inseart all links
       for aLink in aPage.links :
         sourcePage = pagesMap[aLink['source']]
         if aLink['target'] not in pagesMap :
@@ -201,7 +214,7 @@ class Wiki(object):
           continue
         targetPage = pagesMap[aLink['target']]
         modifier   = aLink['modifier']
-      
+
         pageTags = {}
         for aTag in sourcePage.tags.split(',') : pageTags[aTag.strip()] = True
         for aTag in targetPage.tags.split(',') : pageTags[aTag.strip()] = True
@@ -262,7 +275,7 @@ class Wiki(object):
               'linkType' : aModifier
             }
             linkModifier = aModifier
-            if linkModifier not in self.linkMapping : 
+            if linkModifier not in self.linkMapping :
               linkModifier = 'default'
             for aKey, aValue in self.linkMapping[linkModifier].items() :
               aLink[aKey] = aValue
@@ -270,7 +283,7 @@ class Wiki(object):
       tagFileName = None
       try :
         with NamedTemporaryFile(
-          dir=os.path.abspath(self.root), delete=False  
+          dir=os.path.abspath(self.root), delete=False
         ) as tagFile :
           tagFileName = tagFile.name
           #jsonStr = json.dumps(theMap, indent=2)
