@@ -1,0 +1,3 @@
+#!/bin/bash
+
+cp mm* $HOME/.local/bin

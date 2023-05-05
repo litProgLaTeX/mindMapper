@@ -1,0 +1,16 @@
+#!/bin/sh
+
+# This shell script was created by the mindMapper tool
+#       './scripts/installEditableMindMapperCommand'
+# script.
+
+
+# ./ExpositionGit/diSimplex/joyLoLTheory/.mindMapper.toml
+# ./ExpositionGit/diSimplex/planning/.mindMapper.toml
+# ./ExpositionGit/diSimplex/JoyLoLImplementation/.mindMapper.toml
+# ./ExpositionGit/diSimplex/PvsNP/.mindMapper.toml
+# ./tmp/testWiki/.mindMapper.toml
+
+cd /home/stg/ExpositionGit/diSimplex/planning/notes
+
+exec /home/stg/GitTools/lpic/mindMapper/.venv/bin/mindMapper $@ web
