@@ -2,7 +2,7 @@ notes/maps/*.json
 .mindMapper.cache
 .mindMapper.toml
 
-.pdm.toml
+.pdm-python
 pdm.lock
 content
 .DS_Store
