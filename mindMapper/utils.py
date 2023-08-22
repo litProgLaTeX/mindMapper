@@ -26,6 +26,7 @@ def clean_url(url):
   :rtype: str
   """
   url = re.sub('[ ]{2,}', ' ', url).strip()
-  url = url.lower().replace(' ', '_')
+  url = url.replace(' ', '_')
+  #url = url.lower().replace(' ', '_')
   url = url.replace('\\\\', '/').replace('\\', '/')
   return url
